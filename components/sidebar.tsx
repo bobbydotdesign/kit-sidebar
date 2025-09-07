@@ -72,7 +72,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     }
   }, [openMenu, userMenuOpen])
 
-  const favoriteChats = [
+  const [favoriteChats, setFavoriteChats] = useState([
     {
       id: "fav-1",
       title: "AI Best Practices",
@@ -85,9 +85,9 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       preview: "Complete guide to React hooks and state management",
       time: "1w ago",
     },
-  ]
+  ])
 
-  const chatHistory = [
+  const [chatHistory, setChatHistory] = useState([
     {
       id: "chat-1",
       title: "React Component Help",
@@ -121,10 +121,25 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       preview: "What's the best way to deploy my React app?",
       time: "1w ago",
     },
-  ]
+  ])
 
   const handleFavorite = (chatId: string) => {
-    console.log("Favorite chat:", chatId)
+    // Check if chat is in favorites
+    const favoriteChat = favoriteChats.find((chat) => chat.id === chatId)
+
+    if (favoriteChat) {
+      // Unfavorite: move from favorites to recent chats
+      setFavoriteChats((prev) => prev.filter((chat) => chat.id !== chatId))
+      setChatHistory((prev) => [favoriteChat, ...prev])
+    } else {
+      // Favorite: move from recent chats to favorites
+      const recentChat = chatHistory.find((chat) => chat.id === chatId)
+      if (recentChat) {
+        setChatHistory((prev) => prev.filter((chat) => chat.id !== chatId))
+        setFavoriteChats((prev) => [...prev, recentChat])
+      }
+    }
+
     setOpenMenu(null)
   }
 
