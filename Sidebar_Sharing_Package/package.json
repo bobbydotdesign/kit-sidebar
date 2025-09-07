@@ -1,0 +1,35 @@
+{
+  "name": "kitgpt-sidebar-component",
+  "version": "1.0.0",
+  "description": "A beautiful, feature-rich sidebar component for AI chat applications",
+  "main": "components/sidebar.tsx",
+  "keywords": ["react", "typescript", "tailwind", "sidebar", "chat", "ai", "gpt", "component", "ui", "shadcn"],
+  "author": "Kit Component Library",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "lucide-react": "^0.263.1",
+    "clsx": "^2.0.0",
+    "tailwind-merge": "^1.14.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "tailwindcss": "^3.3.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0"
+  },
+  "files": ["components/", "examples/", "lib/", "README.md"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bobbydotdesign/kit-sidebar"
+  },
+  "bugs": {
+    "url": "https://github.com/bobbydotdesign/kit-sidebar/issues"
+  },
+  "homepage": "https://github.com/bobbydotdesign/kit-sidebar#readme"
+}
