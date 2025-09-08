@@ -20,6 +20,7 @@ import {
   CreditCard,
   Bell,
   LogOut,
+  MessageSquare,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -31,6 +32,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const [activeChat, setActiveChat] = useState("chat-1")
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [sectionMenuOpen, setSectionMenuOpen] = useState<string | null>(null)
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
   const [dragOverItem, setDragOverItem] = useState<string | null>(null)
   const [projectChats, setProjectChats] = useState([
@@ -60,19 +62,32 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
         setOpenMenu(null)
         setUserMenuOpen(false)
+        setSectionMenuOpen(null)
+      } else if (sidebarRef.current && sidebarRef.current.contains(event.target as Node)) {
+        const target = event.target as Element
+        const isMenuClick =
+          target.closest('[data-menu="true"]') ||
+          target.closest(".absolute") || // Menu containers
+          target.closest("[data-section]") // Section buttons
+
+        if (!isMenuClick) {
+          setOpenMenu(null)
+          setUserMenuOpen(false)
+          setSectionMenuOpen(null)
+        }
       }
     }
 
-    if (openMenu || userMenuOpen) {
+    if (openMenu || userMenuOpen || sectionMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside)
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
-  }, [openMenu, userMenuOpen])
+  }, [openMenu, userMenuOpen, sectionMenuOpen])
 
-  const [favoriteChats, setFavoriteChats] = useState([
+  const favoriteChats = [
     {
       id: "fav-1",
       title: "AI Best Practices",
@@ -85,9 +100,9 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       preview: "Complete guide to React hooks and state management",
       time: "1w ago",
     },
-  ])
+  ]
 
-  const [chatHistory, setChatHistory] = useState([
+  const chatHistory = [
     {
       id: "chat-1",
       title: "React Component Help",
@@ -121,25 +136,10 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       preview: "What's the best way to deploy my React app?",
       time: "1w ago",
     },
-  ])
+  ]
 
   const handleFavorite = (chatId: string) => {
-    // Check if chat is in favorites
-    const favoriteChat = favoriteChats.find((chat) => chat.id === chatId)
-
-    if (favoriteChat) {
-      // Unfavorite: move from favorites to recent chats
-      setFavoriteChats((prev) => prev.filter((chat) => chat.id !== chatId))
-      setChatHistory((prev) => [favoriteChat, ...prev])
-    } else {
-      // Favorite: move from recent chats to favorites
-      const recentChat = chatHistory.find((chat) => chat.id === chatId)
-      if (recentChat) {
-        setChatHistory((prev) => prev.filter((chat) => chat.id !== chatId))
-        setFavoriteChats((prev) => [...prev, recentChat])
-      }
-    }
-
+    console.log("Favorite chat:", chatId)
     setOpenMenu(null)
   }
 
@@ -325,6 +325,55 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     setUserMenuOpen(false)
   }
 
+  const renderSectionMenu = (
+    sectionId: string,
+    chats: typeof chatHistory,
+    showFavoriteIcon = false,
+    showProjectIcon = false,
+  ) => {
+    if (sectionMenuOpen !== sectionId) return null
+
+    const buttonElement = document.querySelector(`[data-section="${sectionId}"]`)
+    const rect = buttonElement?.getBoundingClientRect()
+
+    const style = rect
+      ? {
+          position: "fixed" as const,
+          left: rect.right + 8, // 8px gap from button
+          top: rect.top,
+          zIndex: 50,
+        }
+      : {}
+
+    return (
+      <div
+        className="bg-popover border border-border rounded-md shadow-lg py-1 w-48 max-h-[300px] overflow-y-auto"
+        style={style}
+      >
+        {chats.map((chat) => (
+          <Button
+            key={chat.id}
+            variant="ghost"
+            size="sm"
+            className={`w-full justify-start px-3 py-2 h-auto text-sm text-popover-foreground ${
+              activeChat === chat.id
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-accent hover:text-accent-foreground"
+            }`}
+            onClick={() => {
+              setActiveChat(chat.id)
+              setSectionMenuOpen(null)
+            }}
+          >
+            {showFavoriteIcon && <Star className="h-3 w-3 mr-2 text-popover-foreground" />}
+            {showProjectIcon && <Folder className="h-3 w-3 mr-2 text-popover-foreground" />}
+            <span className="truncate">{chat.title}</span>
+          </Button>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div
       ref={sidebarRef}
@@ -349,31 +398,75 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       <div className="flex-1 overflow-y-auto">
         {favoriteChats.length > 0 && (
           <div className="p-2">
-            {!collapsed && (
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2">
-                Favorite Chats
-              </h3>
+            {collapsed ? (
+              <div className="relative" data-section="favorites">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-center p-2 hover:bg-accent"
+                  onClick={() => setSectionMenuOpen(sectionMenuOpen === "favorites" ? null : "favorites")}
+                >
+                  <Star className="h-4 w-4" />
+                </Button>
+                {renderSectionMenu("favorites", favoriteChats, true)}
+              </div>
+            ) : (
+              <>
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2">
+                  Favorite Chats
+                </h3>
+                <div className="space-y-1">{renderChatList(favoriteChats, true)}</div>
+              </>
             )}
-            <div className="space-y-1">{renderChatList(favoriteChats, true)}</div>
           </div>
         )}
 
         {projectChats.length > 0 && (
           <div className="p-2">
-            {!collapsed && (
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2">Projects</h3>
+            {collapsed ? (
+              <div className="relative" data-section="projects">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-center p-2 hover:bg-accent"
+                  onClick={() => setSectionMenuOpen(sectionMenuOpen === "projects" ? null : "projects")}
+                >
+                  <Folder className="h-4 w-4" />
+                </Button>
+                {renderSectionMenu("projects", projectChats, false, true)}
+              </div>
+            ) : (
+              <>
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2">
+                  Projects
+                </h3>
+                <div className="space-y-1">{renderChatList(projectChats, false, true, true)}</div>
+              </>
             )}
-            <div className="space-y-1">{renderChatList(projectChats, false, true, true)}</div>
           </div>
         )}
 
         <div className="p-2">
-          {!collapsed && (
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2">
-              Recent Chats
-            </h3>
+          {collapsed ? (
+            <div className="relative" data-section="recent">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-center p-2 hover:bg-accent"
+                onClick={() => setSectionMenuOpen(sectionMenuOpen === "recent" ? null : "recent")}
+              >
+                <MessageSquare className="h-4 w-4" />
+              </Button>
+              {renderSectionMenu("recent", chatHistory)}
+            </div>
+          ) : (
+            <>
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2">
+                Recent Chats
+              </h3>
+              <div className="space-y-1">{renderChatList(chatHistory)}</div>
+            </>
           )}
-          <div className="space-y-1">{renderChatList(chatHistory)}</div>
         </div>
       </div>
 
@@ -406,7 +499,10 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         </div>
 
         {userMenuOpen && (
-          <div className="absolute bottom-full right-2 mb-2 bg-popover border border-border rounded-md shadow-lg z-50 py-1 min-w-[180px]">
+          <div
+            className="absolute bottom-0 left-full ml-2 bg-popover border border-border rounded-md shadow-lg py-1 min-w-[180px] z-50"
+            data-menu="true"
+          >
             <Button
               variant="ghost"
               size="sm"
